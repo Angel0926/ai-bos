@@ -8,3 +8,4 @@ out/
 *.class
 .env
 *.secret
+.idea/
