@@ -2,6 +2,7 @@ package com.aibos.users.service;
 
 import com.aibos.users.model.User;
 import com.aibos.users.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -10,9 +11,12 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User register(String email, String password, String name) {
@@ -20,10 +24,12 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists");
         }
 
+        String hashedPassword = passwordEncoder.encode(password);
+
         User user = new User(
                 UUID.randomUUID().toString(),
                 email,
-                password,
+                hashedPassword,
                 name
         );
 
@@ -34,7 +40,7 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (!user.getPassword().equals(password)) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
