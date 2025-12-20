@@ -1,38 +1,47 @@
 package com.aibos.users.service;
 
 import com.aibos.users.model.User;
+import com.aibos.users.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class UserService {
 
-    // In-memory storage for demo — replace with DB later
-    private final Map<String, User> usersById = new ConcurrentHashMap<>();
-    private final Map<String, User> usersByEmail = new ConcurrentHashMap<>();
+    private final UserRepository userRepository;
+
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     public User register(String email, String password, String name) {
-        if (usersByEmail.containsKey(email)) {
+        if (userRepository.findByEmail(email).isPresent()) {
             throw new IllegalArgumentException("Email already exists");
         }
-        String id = UUID.randomUUID().toString();
-        User u = new User(id, email, password, name);
-        usersById.put(id, u);
-        usersByEmail.put(email, u);
-        return u;
+
+        User user = new User(
+                UUID.randomUUID().toString(),
+                email,
+                password,
+                name
+        );
+
+        return userRepository.save(user);
     }
 
     public User login(String email, String password) {
-        User u = usersByEmail.get(email);
-        if (u == null) throw new IllegalArgumentException("User not found");
-        if (!u.getPassword().equals(password)) throw new IllegalArgumentException("Invalid credentials");
-        return u;
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!user.getPassword().equals(password)) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        return user;
     }
 
     public User getById(String id) {
-        return usersById.get(id);
+        return userRepository.findById(id).orElse(null);
     }
 }
