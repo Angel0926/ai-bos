@@ -20,17 +20,16 @@ public class UserService {
     }
 
     public User register(String email, String password, String name) {
-        if (userRepository.findByEmail(email).isPresent()) {
+        if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email already exists");
         }
-
-        String hashedPassword = passwordEncoder.encode(password);
 
         User user = new User(
                 UUID.randomUUID().toString(),
                 email,
-                hashedPassword,
-                name
+                passwordEncoder.encode(password),
+                name,
+                "ROLE_USER"
         );
 
         return userRepository.save(user);
@@ -48,6 +47,7 @@ public class UserService {
     }
 
     public User getById(String id) {
-        return userRepository.findById(id).orElse(null);
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 }
